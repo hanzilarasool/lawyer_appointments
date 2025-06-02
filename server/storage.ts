@@ -4,6 +4,8 @@ import {
   Admin, 
   InsertAdmin 
 } from "@shared/schema";
+import { AppointmentModel, AdminModel } from "./db";
+import bcrypt from "bcrypt";
 
 export interface IStorage {
   // Appointment methods
@@ -22,44 +24,61 @@ export interface IStorage {
   getBookedSlots(date: string): Promise<string[]>;
 }
 
-export class MemStorage implements IStorage {
-  private appointments: Map<string, Appointment>;
-  private admins: Map<string, Admin>;
-  private currentAppointmentId: number;
-  private currentAdminId: number;
-
+export class DatabaseStorage implements IStorage {
   constructor() {
-    this.appointments = new Map();
-    this.admins = new Map();
-    this.currentAppointmentId = 1;
-    this.currentAdminId = 1;
-    
-    // Create default admin user
-    this.createAdmin({
-      email: "admin@manuellawgroup.com",
-      password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi" // password: "password"
-    });
+    this.initializeAdmin();
+  }
+
+  // Initialize default admin user
+  private async initializeAdmin() {
+    try {
+      const existingAdmin = await AdminModel.findOne({ email: "admin@manuellawgroup.com" });
+      if (!existingAdmin) {
+        const hashedPassword = await bcrypt.hash("password", 10);
+        await AdminModel.create({
+          email: "admin@manuellawgroup.com",
+          password: hashedPassword
+        });
+        console.log("Default admin user created");
+      }
+    } catch (error) {
+      console.error("Error creating default admin:", error);
+    }
   }
 
   // Appointment methods
   async createAppointment(insertAppointment: InsertAppointment): Promise<Appointment> {
-    const id = this.currentAppointmentId.toString();
-    this.currentAppointmentId++;
-    const appointment: Appointment = {
-      ...insertAppointment,
-      id,
-      status: "scheduled",
-      createdAt: new Date(),
-      updatedAt: new Date()
+    const appointment = await AppointmentModel.create(insertAppointment);
+    return {
+      id: appointment._id.toString(),
+      clientName: appointment.clientName,
+      clientEmail: appointment.clientEmail,
+      clientPhone: appointment.clientPhone,
+      caseType: appointment.caseType,
+      caseSummary: appointment.caseSummary,
+      appointmentDate: appointment.appointmentDate,
+      appointmentTime: appointment.appointmentTime,
+      status: appointment.status,
+      createdAt: appointment.createdAt,
+      updatedAt: appointment.updatedAt
     };
-    this.appointments.set(id, appointment);
-    return appointment;
   }
 
   async getAppointmentsByDate(date: string): Promise<Appointment[]> {
-    return Array.from(this.appointments.values()).filter(
-      appointment => appointment.appointmentDate === date
-    );
+    const appointments = await AppointmentModel.find({ appointmentDate: date });
+    return appointments.map(apt => ({
+      id: apt._id.toString(),
+      clientName: apt.clientName,
+      clientEmail: apt.clientEmail,
+      clientPhone: apt.clientPhone,
+      caseType: apt.caseType,
+      caseSummary: apt.caseSummary,
+      appointmentDate: apt.appointmentDate,
+      appointmentTime: apt.appointmentTime,
+      status: apt.status,
+      createdAt: apt.createdAt,
+      updatedAt: apt.updatedAt
+    }));
   }
 
   async getTodayAppointments(): Promise<Appointment[]> {
@@ -71,18 +90,46 @@ export class MemStorage implements IStorage {
     id: string, 
     status: "scheduled" | "completed" | "cancelled"
   ): Promise<Appointment | undefined> {
-    const appointment = this.appointments.get(id);
-    if (appointment) {
-      appointment.status = status;
-      appointment.updatedAt = new Date();
-      this.appointments.set(id, appointment);
-      return appointment;
-    }
-    return undefined;
+    const appointment = await AppointmentModel.findByIdAndUpdate(
+      id, 
+      { status }, 
+      { new: true }
+    );
+    
+    if (!appointment) return undefined;
+    
+    return {
+      id: appointment._id.toString(),
+      clientName: appointment.clientName,
+      clientEmail: appointment.clientEmail,
+      clientPhone: appointment.clientPhone,
+      caseType: appointment.caseType,
+      caseSummary: appointment.caseSummary,
+      appointmentDate: appointment.appointmentDate,
+      appointmentTime: appointment.appointmentTime,
+      status: appointment.status,
+      createdAt: appointment.createdAt,
+      updatedAt: appointment.updatedAt
+    };
   }
 
   async getAppointmentById(id: string): Promise<Appointment | undefined> {
-    return this.appointments.get(id);
+    const appointment = await AppointmentModel.findById(id);
+    if (!appointment) return undefined;
+    
+    return {
+      id: appointment._id.toString(),
+      clientName: appointment.clientName,
+      clientEmail: appointment.clientEmail,
+      clientPhone: appointment.clientPhone,
+      caseType: appointment.caseType,
+      caseSummary: appointment.caseSummary,
+      appointmentDate: appointment.appointmentDate,
+      appointmentTime: appointment.appointmentTime,
+      status: appointment.status,
+      createdAt: appointment.createdAt,
+      updatedAt: appointment.updatedAt
+    };
   }
 
   async deleteExpiredAppointments(): Promise<void> {
@@ -90,37 +137,47 @@ export class MemStorage implements IStorage {
     const today = now.toISOString().split('T')[0];
     const currentTime = now.getHours() * 100 + now.getMinutes();
 
-    const appointmentEntries = Array.from(this.appointments.entries());
-    for (const [id, appointment] of appointmentEntries) {
-      if (appointment.appointmentDate < today) {
-        this.appointments.delete(id);
-      } else if (appointment.appointmentDate === today) {
-        const [hours, minutes] = appointment.appointmentTime.split(':').map(Number);
-        const appointmentTime = hours * 100 + minutes;
-        
-        // Delete if appointment time has passed by more than 1 hour
-        if (appointmentTime + 100 < currentTime) {
-          this.appointments.delete(id);
-        }
+    // Delete appointments from previous days
+    await AppointmentModel.deleteMany({
+      appointmentDate: { $lt: today }
+    });
+
+    // Delete appointments from today that are more than 1 hour past
+    const todayAppointments = await AppointmentModel.find({
+      appointmentDate: today
+    });
+
+    for (const appointment of todayAppointments) {
+      const [hours, minutes] = appointment.appointmentTime.split(':').map(Number);
+      const appointmentTime = hours * 100 + minutes;
+      
+      if (appointmentTime + 100 < currentTime) {
+        await AppointmentModel.findByIdAndDelete(appointment._id);
       }
     }
   }
 
   // Admin methods
   async getAdminByEmail(email: string): Promise<Admin | undefined> {
-    return Array.from(this.admins.values()).find(admin => admin.email === email);
+    const admin = await AdminModel.findOne({ email });
+    if (!admin) return undefined;
+    
+    return {
+      id: admin._id.toString(),
+      email: admin.email,
+      password: admin.password,
+      createdAt: admin.createdAt
+    };
   }
 
   async createAdmin(insertAdmin: InsertAdmin): Promise<Admin> {
-    const id = this.currentAdminId.toString();
-    this.currentAdminId++;
-    const admin: Admin = {
-      ...insertAdmin,
-      id,
-      createdAt: new Date()
+    const admin = await AdminModel.create(insertAdmin);
+    return {
+      id: admin._id.toString(),
+      email: admin.email,
+      password: admin.password,
+      createdAt: admin.createdAt
     };
-    this.admins.set(id, admin);
-    return admin;
   }
 
   // Slot availability
@@ -132,4 +189,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
