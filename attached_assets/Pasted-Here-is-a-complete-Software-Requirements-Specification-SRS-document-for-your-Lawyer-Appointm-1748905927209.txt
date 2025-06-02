@@ -1,0 +1,157 @@
+Here is a complete **Software Requirements Specification (SRS)** document for your **Lawyer Appointment Booking System** built using the **MERN stack**. You can download this, share with clients, or use it for documentation.
+
+---
+
+# **Software Requirements Specification (SRS)**
+
+**Project Title:** Lawyer Appointment Booking System
+**Client:** Manuel De Santiago Law Group
+**Developer:** Hanzila Rasool
+**Version:** 1.0
+**Date:** June 3, 2025
+
+---
+
+## 1. **Introduction**
+
+### 1.1 Purpose
+
+The purpose of this system is to allow clients of the Manuel De Santiago Law Group to book appointments online by selecting available time slots. The system prevents double bookings and stores client case details for legal reference.
+
+### 1.2 Scope
+
+The system will:
+
+* Provide a user interface to book appointments.
+* Allow clients to select from available time slots.
+* Prevent booking of already taken slots.
+* Store client and appointment information in a database.
+* Be accessible via web (desktop and mobile).
+* (Optional Future Scope): Admin panel, email notifications.
+
+### 1.3 Definitions, Acronyms, and Abbreviations
+
+* **MERN:** MongoDB, Express, React, Node.js
+* **UI:** User Interface
+* **SRS:** Software Requirements Specification
+* **Client:** A person who books a legal appointment
+
+---
+
+## 2. **Overall Description**
+
+### 2.1 Product Perspective
+
+The system is a standalone web application that runs on a MERN stack and is designed to work on both desktop and mobile devices.
+
+### 2.2 Product Functions
+
+* Appointment Booking Form
+* Dynamic Slot Availability
+* Duplicate Slot Prevention
+* Data Persistence via MongoDB
+* Appointment Confirmation Message
+
+### 2.3 User Characteristics
+
+* **Clients:** Basic internet users needing legal help.
+* **Admin/Lawyer:** Staff at Manuel Law Group with ability to view/manage appointments (optional future module).
+
+### 2.4 Constraints
+
+* Slots are assumed to be fixed hourly ranges.
+* Only one appointment per slot.
+* Requires internet connection.
+* Deployment environment: Netlify (frontend), Render or Railway (backend), MongoDB Atlas (database).
+
+---
+
+## 3. **Functional Requirements**
+
+### 3.1 Appointment Booking
+
+* **FR1:** The system shall allow users to input name, contact, case type, case summary, preferred date, and time slot.
+* **FR2:** The system shall not allow a time slot to be booked more than once on the same date.
+* **FR3:** The system shall display a success or error message based on booking outcome.
+
+### 3.2 Slot Availability
+
+* **FR4:** The system shall display a list of available time slots for the selected date.
+* **FR5:** The system shall visually mark booked slots as unavailable.
+
+### 3.3 Data Storage
+
+* **FR6:** The system shall store appointment data in MongoDB with fields: name, contact, legal issue, case history, slot, date.
+
+---
+
+## 4. **Non-Functional Requirements**
+
+### 4.1 Performance
+
+* The system shall respond to slot availability requests within 1 second.
+
+### 4.2 Scalability
+
+* The system shall be scalable to hundreds of appointments per day.
+
+### 4.3 Usability
+
+* The UI shall be mobile-responsive and intuitive for non-technical users.
+
+### 4.4 Security
+
+* No sensitive client data (e.g., passwords) is collected.
+* Backend APIs shall validate data to prevent injection attacks.
+
+---
+
+## 5. **System Architecture**
+
+### 5.1 Frontend (React)
+
+* User form and UI
+* Fetches slot availability
+* Sends booking requests to backend
+
+### 5.2 Backend (Node.js + Express)
+
+* REST API for `/slots` and `/book`
+* Checks availability and stores booking
+
+### 5.3 Database (MongoDB)
+
+* Stores all client booking data
+
+---
+
+## 6. **Use Case Diagram**
+
+```
+[Client] -- (Select Date) -- (Fetch Available Slots)
+       \-- (Fill Form) -- (Submit Booking)
+                    \---> [Backend] -- (Save in MongoDB)
+```
+
+---
+
+## 7. **Screens & Flow**
+
+| Screen            | Purpose                               |
+| ----------------- | ------------------------------------- |
+| Home/Booking Page | Select date, see available slots      |
+| Form Section      | Fill client details, select time slot |
+| Confirmation      | Show message: "Appointment Booked!"   |
+
+---
+
+## 8. **Future Enhancements**
+
+* Admin Dashboard (View/Edit/Delete bookings)
+* Email & SMS notifications
+* Authentication for admin
+* Slot duration customization
+
+---
+
+Would you like this SRS exported as a **PDF or Word file**? I can generate that for you.
