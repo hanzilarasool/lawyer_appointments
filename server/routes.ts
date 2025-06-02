@@ -16,7 +16,7 @@ const EMAIL_PASS = process.env.EMAIL_PASS || "your-email-password";
 const LAWYER_EMAIL = process.env.LAWYER_EMAIL || "lawyer@manuellawgroup.com";
 
 // Email transporter
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: 587,
   secure: false,
@@ -127,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(201).json(appointment);
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === 'ZodError') {
         res.status(400).json({ message: "Invalid appointment data", errors: error.errors });
       } else {
@@ -161,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         token, 
         admin: { id: admin.id, email: admin.email } 
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === 'ZodError') {
         res.status(400).json({ message: "Invalid login data", errors: error.errors });
       } else {

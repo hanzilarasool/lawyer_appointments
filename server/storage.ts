@@ -43,7 +43,8 @@ export class MemStorage implements IStorage {
 
   // Appointment methods
   async createAppointment(insertAppointment: InsertAppointment): Promise<Appointment> {
-    const id = this.currentAppointmentId++.toString();
+    const id = this.currentAppointmentId.toString();
+    this.currentAppointmentId++;
     const appointment: Appointment = {
       ...insertAppointment,
       id,
@@ -89,7 +90,8 @@ export class MemStorage implements IStorage {
     const today = now.toISOString().split('T')[0];
     const currentTime = now.getHours() * 100 + now.getMinutes();
 
-    for (const [id, appointment] of this.appointments.entries()) {
+    const appointmentEntries = Array.from(this.appointments.entries());
+    for (const [id, appointment] of appointmentEntries) {
       if (appointment.appointmentDate < today) {
         this.appointments.delete(id);
       } else if (appointment.appointmentDate === today) {
@@ -110,7 +112,8 @@ export class MemStorage implements IStorage {
   }
 
   async createAdmin(insertAdmin: InsertAdmin): Promise<Admin> {
-    const id = this.currentAdminId++.toString();
+    const id = this.currentAdminId.toString();
+    this.currentAdminId++;
     const admin: Admin = {
       ...insertAdmin,
       id,
