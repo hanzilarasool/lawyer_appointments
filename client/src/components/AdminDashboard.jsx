@@ -7,7 +7,7 @@ import {
   CalendarDays, 
   CheckCircle, 
   Clock, 
-  ExclamationTriangle,
+  AlertTriangle,
   Eye,
   Check,
   LogOut,
@@ -172,7 +172,7 @@ export default function AdminDashboard({ token, onLogout }) {
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                    <ExclamationTriangle className="text-red-600 h-5 w-5" />
+                    <AlertTriangle className="text-red-600 h-5 w-5" />
                   </div>
                 </div>
                 <div className="ml-4">
