@@ -4,25 +4,26 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import nodemailer from "nodemailer";
 import { storage } from "./storage";
+import dotenv from "dotenv";
+dotenv.config();
 import { 
   insertAppointmentSchema, 
   loginSchema, 
   appointmentSchema 
 } from "@shared/schema";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
-const EMAIL_USER = process.env.EMAIL_USER || "noreply@manuellawgroup.com";
-const EMAIL_PASS = process.env.EMAIL_PASS || "your-email-password";
-const LAWYER_EMAIL = process.env.LAWYER_EMAIL || "lawyer@manuellawgroup.com";
+// require("dotenv").config();
+const JWT_SECRET = process.env.JWT_SECRET ||"default_secret_key";
+const EMAIL_USER = process.env.EMAIL_USER
+const EMAIL_PASS = process.env.EMAIL_PASS
+const LAWYER_EMAIL = process.env.LAWYER_EMAIL
 
 // Email transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: 587,
-  secure: false,
+  service: "gmail",
   auth: {
-    user: EMAIL_USER,
-    pass: EMAIL_PASS,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
@@ -34,7 +35,7 @@ function authenticateToken(req: any, res: any, next: any) {
   if (!token) {
     return res.status(401).json({ message: 'Access token required' });
   }
-
+  
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
     if (err) {
       return res.status(403).json({ message: 'Invalid token' });
@@ -47,94 +48,50 @@ function authenticateToken(req: any, res: any, next: any) {
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Get available time slots for a date
-  app.get("/api/slots/:date", async (req, res) => {
-    try {
-      const { date } = req.params;
-      const bookedSlots = await storage.getBookedSlots(date);
-      
-      // Available time slots (9 AM to 5 PM, hourly)
-      const allSlots = [
-        "09:00", "10:00", "11:00", "12:00", 
-        "13:00", "14:00", "15:00", "16:00", "17:00"
-      ];
-      
-      const availableSlots = allSlots.filter(slot => !bookedSlots.includes(slot));
-      
-      res.json({ 
-        availableSlots, 
-        bookedSlots 
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching slots" });
-    }
-  });
+app.get("/api/slots/:date", async (req, res) => {
+     try {
+       const { date } = req.params;
+       const bookedSlots = await storage.getBookedSlots(date);
+       const allSlots = [
+         "09:00", "10:00", "11:00", "12:00", 
+         "13:00", "14:00", "15:00", "16:00", "17:00"
+       ];
+       const availableSlots = allSlots.filter(slot => !bookedSlots.includes(slot));
+       console.log('Slots for', date, ':', { availableSlots, bookedSlots }); // Debug log
+       res.json({ 
+         availableSlots, 
+         bookedSlots 
+       });
+     } catch (error) {
+       console.error('Error fetching slots:', error); // Debug log
+       res.status(500).json({ message: "Error fetching slots", error: error.message });
+     }
+   });
+
 
   // Book an appointment
-  app.post("/api/appointments", async (req, res) => {
-    try {
-      const validatedData = insertAppointmentSchema.parse(req.body);
-      
-      // Check if slot is already booked
-      const bookedSlots = await storage.getBookedSlots(validatedData.appointmentDate);
-      if (bookedSlots.includes(validatedData.appointmentTime)) {
-        return res.status(400).json({ message: "Time slot is already booked" });
-      }
-      
-      // Clean up expired appointments first
-      await storage.deleteExpiredAppointments();
-      
-      // Create appointment
-      const appointment = await storage.createAppointment(validatedData);
-      
-      // Send email notifications
-      try {
-        // Email to lawyer
-        await transporter.sendMail({
-          from: EMAIL_USER,
-          to: LAWYER_EMAIL,
-          subject: "New Appointment Booking",
-          html: `
-            <h2>New Appointment Booked</h2>
-            <p><strong>Client:</strong> ${appointment.clientName}</p>
-            <p><strong>Email:</strong> ${appointment.clientEmail}</p>
-            <p><strong>Phone:</strong> ${appointment.clientPhone}</p>
-            <p><strong>Date:</strong> ${appointment.appointmentDate}</p>
-            <p><strong>Time:</strong> ${appointment.appointmentTime}</p>
-            <p><strong>Case Type:</strong> ${appointment.caseType}</p>
-            <p><strong>Case Summary:</strong> ${appointment.caseSummary}</p>
-          `
-        });
-
-        // Email to client
-        await transporter.sendMail({
-          from: EMAIL_USER,
-          to: appointment.clientEmail,
-          subject: "Appointment Confirmation - Manuel De Santiago Law Group",
-          html: `
-            <h2>Appointment Confirmed</h2>
-            <p>Dear ${appointment.clientName},</p>
-            <p>Your appointment has been successfully booked with Manuel De Santiago Law Group.</p>
-            <p><strong>Date:</strong> ${appointment.appointmentDate}</p>
-            <p><strong>Time:</strong> ${appointment.appointmentTime}</p>
-            <p><strong>Case Type:</strong> ${appointment.caseType}</p>
-            <p>We will contact you if any changes are needed.</p>
-            <p>Thank you for choosing Manuel De Santiago Law Group.</p>
-          `
-        });
-      } catch (emailError) {
-        console.error("Email sending failed:", emailError);
-        // Continue with success response even if email fails
-      }
-      
-      res.status(201).json(appointment);
-    } catch (error: any) {
-      if (error.name === 'ZodError') {
-        res.status(400).json({ message: "Invalid appointment data", errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Error creating appointment" });
-      }
-    }
-  });
+app.post("/api/appointments", async (req, res) => {
+     try {
+       const validatedData = insertAppointmentSchema.parse(req.body);
+       const bookedSlots = await storage.getBookedSlots(validatedData.appointmentDate);
+       console.log('Checking booked slots for', validatedData.appointmentDate, ':', bookedSlots); // Debug log
+       if (bookedSlots.includes(validatedData.appointmentTime)) {
+         return res.status(400).json({ message: "Time slot is already booked" });
+       }
+       await storage.deleteExpiredAppointments();
+       const appointment = await storage.createAppointment(validatedData);
+       console.log('Created appointment:', appointment); // Debug log
+       // ... email notifications ...
+       res.status(201).json(appointment);
+     } catch (error: any) {
+       console.error('Error creating appointment:', error); // Debug log
+       if (error.name === 'ZodError') {
+         res.status(400).json({ message: "Invalid appointment data", errors: error.errors });
+       } else {
+         res.status(500).json({ message: "Error creating appointment", error: error.message });
+       }
+     }
+   });
 
   // Admin login
   app.post("/api/admin/login", async (req, res) => {
@@ -169,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   });
-
+// 
   // Get today's appointments (admin only)
   app.get("/api/admin/appointments/today", authenticateToken, async (req, res) => {
     try {

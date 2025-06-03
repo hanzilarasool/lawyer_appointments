@@ -1,16 +1,26 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { getAvailableSlots } from "../lib/api";
 import { Loader2 } from "lucide-react";
+import moment from 'moment-timezone';
 
 export default function TimeSlots({ selectedDate, selectedTime, onTimeSelect }) {
-  const { data: slotsData, isLoading, error } = useQuery({
-    queryKey: ['/api/slots', selectedDate],
-    queryFn: () => getAvailableSlots(selectedDate),
-    enabled: !!selectedDate,
-  });
+  // Ensure selectedDate is formatted as YYYY-MM-DD in PKT
+  const formattedDate = selectedDate 
+    ? moment.tz(selectedDate, 'Asia/Karachi').format('YYYY-MM-DD')
+    : null;
+  console.log('Selected date (raw):', selectedDate); // Debug log
+  console.log('Formatted date (PKT):', formattedDate); // Debug log
 
-  if (!selectedDate) {
+  const { data: slotsData, isLoading, error } = useQuery({
+    queryKey: ['/api/slots', formattedDate],
+    queryFn: () => getAvailableSlots(formattedDate),
+    enabled: !!formattedDate,
+  });
+  console.log('Slots data:', slotsData); // Debug log
+
+  if (!formattedDate) {
     return (
       <div className="text-center py-8 text-gray-500">
         Please select a date first

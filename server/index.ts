@@ -34,7 +34,7 @@ app.use((req, res, next) => {
     }
   });
 
-  next();
+  next(); 
 });
 
 (async () => {
@@ -43,7 +43,7 @@ app.use((req, res, next) => {
     await connectToDatabase();
   } catch (error) {
     console.error("Failed to connect to MongoDB:", error);
-    process.exit(1);
+    process.exit(1); 
   }
 
   const server = await registerRoutes(app);
@@ -72,7 +72,7 @@ app.use((req, res, next) => {
   server.listen({
     port,
     host: "0.0.0.0",
-    reusePort: true,
+
   }, () => {
     log(`serving on port ${port}`);
   });

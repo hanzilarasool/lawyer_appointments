@@ -1,4 +1,5 @@
-import { 
+
+import {
   Appointment, 
   InsertAppointment, 
   Admin, 
@@ -6,21 +7,17 @@ import {
 } from "@shared/schema";
 import { AppointmentModel, AdminModel } from "./db";
 import bcrypt from "bcrypt";
+import moment from 'moment-timezone';
 
 export interface IStorage {
-  // Appointment methods
   createAppointment(appointment: InsertAppointment): Promise<Appointment>;
   getAppointmentsByDate(date: string): Promise<Appointment[]>;
   getTodayAppointments(): Promise<Appointment[]>;
   updateAppointmentStatus(id: string, status: "scheduled" | "completed" | "cancelled"): Promise<Appointment | undefined>;
   getAppointmentById(id: string): Promise<Appointment | undefined>;
   deleteExpiredAppointments(): Promise<void>;
-  
-  // Admin methods
   getAdminByEmail(email: string): Promise<Admin | undefined>;
   createAdmin(admin: InsertAdmin): Promise<Admin>;
-  
-  // Slot availability
   getBookedSlots(date: string): Promise<string[]>;
 }
 
@@ -29,7 +26,6 @@ export class DatabaseStorage implements IStorage {
     this.initializeAdmin();
   }
 
-  // Initialize default admin user
   private async initializeAdmin() {
     try {
       const existingAdmin = await AdminModel.findOne({ email: "admin@manuellawgroup.com" });
@@ -46,7 +42,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Appointment methods
   async createAppointment(insertAppointment: InsertAppointment): Promise<Appointment> {
     const appointment = await AppointmentModel.create(insertAppointment);
     return {
@@ -65,7 +60,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAppointmentsByDate(date: string): Promise<Appointment[]> {
+    console.log('Querying appointments for date:', date); // Debug log
     const appointments = await AppointmentModel.find({ appointmentDate: date });
+    console.log('Appointments found:', appointments); // Debug log
     return appointments.map(apt => ({
       id: apt._id.toString(),
       clientName: apt.clientName,
@@ -82,7 +79,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTodayAppointments(): Promise<Appointment[]> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = moment.tz('Asia/Karachi').format('YYYY-MM-DD');
+    console.log('Fetching appointments for date:', today); // Debug log
     return this.getAppointmentsByDate(today);
   }
 
@@ -95,16 +93,14 @@ export class DatabaseStorage implements IStorage {
       { status }, 
       { new: true }
     );
-    
     if (!appointment) return undefined;
-    
     return {
       id: appointment._id.toString(),
       clientName: appointment.clientName,
       clientEmail: appointment.clientEmail,
       clientPhone: appointment.clientPhone,
-      caseType: appointment.caseType,
-      caseSummary: appointment.caseSummary,
+      caseType: apt.caseType,
+      caseSummary: apt.caseSummary,
       appointmentDate: appointment.appointmentDate,
       appointmentTime: appointment.appointmentTime,
       status: appointment.status,
@@ -116,7 +112,6 @@ export class DatabaseStorage implements IStorage {
   async getAppointmentById(id: string): Promise<Appointment | undefined> {
     const appointment = await AppointmentModel.findById(id);
     if (!appointment) return undefined;
-    
     return {
       id: appointment._id.toString(),
       clientName: appointment.clientName,
@@ -133,35 +128,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteExpiredAppointments(): Promise<void> {
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const currentTime = now.getHours() * 100 + now.getMinutes();
-
-    // Delete appointments from previous days
+    const now = moment.tz('Asia/Karachi');
+    const yesterday = now.clone().subtract(1, 'days');
+    const yesterdayFormatted = yesterday.format('YYYY-MM-DD');
+    const expiredAppointments = await AppointmentModel.find({
+      appointmentDate: { $lte: yesterdayFormatted }
+    });
+    console.log('Deleting expired appointments:', expiredAppointments);
     await AppointmentModel.deleteMany({
-      appointmentDate: { $lt: today }
+      appointmentDate: { $lte: yesterdayFormatted }
     });
-
-    // Delete appointments from today that are more than 1 hour past
-    const todayAppointments = await AppointmentModel.find({
-      appointmentDate: today
-    });
-
-    for (const appointment of todayAppointments) {
-      const [hours, minutes] = appointment.appointmentTime.split(':').map(Number);
-      const appointmentTime = hours * 100 + minutes;
-      
-      if (appointmentTime + 100 < currentTime) {
-        await AppointmentModel.findByIdAndDelete(appointment._id);
-      }
-    }
   }
 
-  // Admin methods
   async getAdminByEmail(email: string): Promise<Admin | undefined> {
     const admin = await AdminModel.findOne({ email });
     if (!admin) return undefined;
-    
     return {
       id: admin._id.toString(),
       email: admin.email,
@@ -180,12 +161,13 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  // Slot availability
   async getBookedSlots(date: string): Promise<string[]> {
     const appointments = await this.getAppointmentsByDate(date);
-    return appointments
-      .filter(apt => apt.status === "scheduled")
+    const bookedSlots = appointments
+      .filter(apt => ['scheduled', 'completed'].includes(apt.status.toLowerCase()))
       .map(apt => apt.appointmentTime);
+    console.log('Booked slots for', date, ':', bookedSlots); // Debug log
+    return bookedSlots;
   }
 }
 

@@ -1,16 +1,28 @@
 const API_BASE = "/api";
 
 // Get available slots for a date
+//  export async function getAvailableSlots(date) {
+//      const response = await fetch(`${API_BASE}/slots/${date}`);
+//      const data = await response.json();
+//      console.log('Slots response for', date, ':', data); // Debug log
+//      if (!response.ok) {
+//        throw new Error("Failed to fetch available slots");
+//      }
+//      return data;
+//    }
 export async function getAvailableSlots(date) {
+  console.log('Fetching slots for date:', date); // Debug log
   const response = await fetch(`${API_BASE}/slots/${date}`);
+  const data = await response.json();
+  console.log('Slots response:', data); // Debug log
   if (!response.ok) {
     throw new Error("Failed to fetch available slots");
   }
-  return response.json();
+  return data;
 }
-
 // Book an appointment
 export async function bookAppointment(appointmentData) {
+  console.log('Booking appointment with data:', appointmentData); // Debug log
   const response = await fetch(`${API_BASE}/appointments`, {
     method: "POST",
     headers: {
@@ -19,12 +31,13 @@ export async function bookAppointment(appointmentData) {
     body: JSON.stringify(appointmentData),
   });
   
+  const data = await response.json();
+  console.log('Booking response:', data); // Debug log
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to book appointment");
+    throw new Error(data.message || "Failed to book appointment");
   }
   
-  return response.json();
+  return data;
 }
 
 // Admin login

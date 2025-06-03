@@ -1,52 +1,54 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import moment from 'moment-timezone';
 
 export default function Calendar({ selectedDate, onDateSelect }) {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(moment.tz('Asia/Karachi').toDate());
 
-  const today = new Date();
+  const today = moment.tz('Asia/Karachi').startOf('day').toDate();
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
-  // Get first day of the month and number of days
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
   ];
 
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const navigateMonth = (direction) => {
     setCurrentMonth(new Date(year, month + direction, 1));
   };
 
   const handleDateClick = (day) => {
-    const clickedDate = new Date(year, month, day);
-    if (clickedDate >= today.setHours(0, 0, 0, 0)) {
-      const dateString = clickedDate.toISOString().split('T')[0];
+    const clickedDate = moment.tz({ year, month, day }, 'Asia/Karachi');
+    if (clickedDate.isSameOrAfter(today, 'day')) {
+      const dateString = clickedDate.format('YYYY-MM-DD');
+      console.log('Selected date (PKT):', dateString); // Debug log
       onDateSelect(dateString);
     }
   };
 
   const isSelectedDate = (day) => {
     if (!selectedDate) return false;
-    const dateString = new Date(year, month, day).toISOString().split('T')[0];
+    const dateString = moment.tz({ year, month, day }, 'Asia/Karachi').format('YYYY-MM-DD');
     return dateString === selectedDate;
   };
 
   const isPastDate = (day) => {
-    const dateToCheck = new Date(year, month, day);
-    return dateToCheck < today.setHours(0, 0, 0, 0);
+    const dateToCheck = moment.tz({ year, month, day }, 'Asia/Karachi');
+    return dateToCheck.isBefore(today, 'day');
   };
 
   const isWeekend = (day) => {
-    const date = new Date(year, month, day);
-    return date.getDay() === 0 || date.getDay() === 6; // Sunday or Saturday
+    const date = moment.tz({ year, month, day }, 'Asia/Karachi');
+    return date.day() === 0 || date.day() === 6; // Sunday or Saturday
   };
 
   // Generate calendar days
@@ -57,7 +59,7 @@ export default function Calendar({ selectedDate, onDateSelect }) {
     calendarDays.push({
       day: daysInPrevMonth - i,
       isCurrentMonth: false,
-      isPast: true
+      isPast: true,
     });
   }
 
@@ -68,7 +70,7 @@ export default function Calendar({ selectedDate, onDateSelect }) {
       isCurrentMonth: true,
       isPast: isPastDate(day),
       isWeekend: isWeekend(day),
-      isSelected: isSelectedDate(day)
+      isSelected: isSelectedDate(day),
     });
   }
 
@@ -78,7 +80,7 @@ export default function Calendar({ selectedDate, onDateSelect }) {
     calendarDays.push({
       day,
       isCurrentMonth: false,
-      isPast: false
+      isPast: false,
     });
   }
 
