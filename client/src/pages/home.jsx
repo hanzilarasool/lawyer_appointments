@@ -6,13 +6,13 @@ export default function Home() {
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary to-blue-700 text-white py-16 rounded-xl mb-12">
+      <section className="bg-gradient-to-r from-primary to-blue-700 text-white py-10 rounded-xl mb-2">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-4">Schedule Your Legal Consultation</h2>
+          <h2 className="text-3xl font-bold mb-4 lg:text-2xl">Schedule Your Legal Consultation</h2>
           <p className="text-xl text-blue-100 mb-8">
             Professional legal services with convenient online appointment booking
           </p>
-          <div className="flex justify-center items-center space-x-8 text-blue-100">
+          <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6 text-blue-100">
             <div className="flex items-center">
               <Shield className="text-2xl mr-3" />
               <span>Confidential</span>
@@ -46,7 +46,7 @@ export default function Home() {
             <p className="text-law-slate">We'll confirm your appointment within 2 hours</p>
           </div>
           <div>
-            <Award className="text-law-blue text-3xl mb-4 mx-auto" />
+            <Shield className="text-law-blue text-3xl mb-4 mx-auto" />
             <h4 className="font-semibold text-gray-900 mb-2">Experienced Team</h4>
             <p className="text-law-slate">Over 15 years of legal expertise</p>
           </div>

@@ -108,13 +108,13 @@ export default function AdminLogin({ onLoginSuccess }) {
             </form>
           </Form>
           
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+          {/* <div className="mt-4 p-3 bg-blue-50 rounded-lg">
             <p className="text-xs text-blue-700">
               <strong>Demo credentials:</strong><br />
               Email: admin@manuellawgroup.com<br />
               Password: password
             </p>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
     </div>
